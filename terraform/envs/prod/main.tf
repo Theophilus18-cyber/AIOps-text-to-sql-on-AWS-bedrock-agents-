@@ -138,7 +138,10 @@ data "aws_iam_policy_document" "orchestrator" {
   }
   statement {
     actions   = ["bedrock:InvokeModel"]
-    resources = ["arn:aws:bedrock:${local.region}::foundation-model/${var.model_id}"]
+    resources = [
+      "arn:aws:bedrock:${local.region}:${local.account_id}:inference-profile/${var.model_id}",
+      "arn:aws:bedrock:*::foundation-model/${var.model_foundation_id}",
+    ]
   }
   statement {
     actions   = ["bedrock:ApplyGuardrail"]
@@ -168,7 +171,6 @@ module "orchestrator" {
   zip_path                       = "${local.zip_root}/dist/orchestrator.zip"
   timeout                        = 120
   memory_size                    = 256
-  reserved_concurrent_executions = 20
   kms_key_arn                    = module.kms.arn
   environment = {
     REGION                = local.region

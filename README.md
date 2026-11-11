@@ -88,7 +88,7 @@ into `s3://<lake>/raw/<table>/` and re-running the refresh — no code changes.
 |---|---|
 | Query engine | Amazon Athena (Glue Data Catalog + S3 lake) |
 | Orchestration | AWS Lambda + Bedrock Runtime `converse` (code-defined tool loop) |
-| Model | Claude Sonnet (`anthropic.claude-sonnet-5-5`) |
+| Model | Claude Sonnet (`us.anthropic.claude-sonnet-4-6`) |
 | Embeddings | Amazon Titan Text Embeddings v2 |
 | Vector store | Amazon OpenSearch Serverless (via Bedrock Knowledge Bases) |
 | Guardrails | Amazon Bedrock Guardrails (PII masking + prompt-attack filtering) |

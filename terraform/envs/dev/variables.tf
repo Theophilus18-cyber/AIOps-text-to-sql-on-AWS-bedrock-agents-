@@ -17,9 +17,15 @@ variable "aws_region" {
 }
 
 variable "model_id" {
-  description = "Bedrock model ID or inference profile ID for the agent"
+  description = "Bedrock inference profile ID for the agent"
   type        = string
-  default     = "anthropic.claude-sonnet-5-5"
+  default     = "us.anthropic.claude-sonnet-4-6"
+}
+
+variable "model_foundation_id" {
+  description = "Underlying foundation model the inference profile routes to (for IAM)"
+  type        = string
+  default     = "anthropic.claude-sonnet-4-6"
 }
 
 variable "embedding_model_id" {

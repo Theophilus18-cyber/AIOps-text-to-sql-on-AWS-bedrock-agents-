@@ -111,7 +111,7 @@ def main() -> int:
 
     try:
         _create_index(args.endpoint, args.index, args.region, args.dimension)
-    except Exception as exc:  # noqa: BLE001 - surface a clean message
+    except Exception as exc:  # surface a clean message and a non-zero exit
         print(str(exc), file=sys.stderr)
         return 1
     return 0

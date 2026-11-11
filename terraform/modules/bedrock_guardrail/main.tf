@@ -67,20 +67,6 @@ resource "aws_bedrock_guardrail" "this" {
     }
   }
 
-  topic_policy_config {
-    topics_config {
-      name       = "OffTopic"
-      definition = "Questions unrelated to the credit card transactions dataset or the text-to-SQL system."
-      examples = [
-        "Write me a poem about the ocean",
-        "What is the capital of France?",
-        "How do I hack into a server?",
-        "Give me investment advice for retirement",
-      ]
-      type = "DENY"
-    }
-  }
-
   word_policy_config {
     managed_word_lists_config {
       type = "PROFANITY"
@@ -90,5 +76,9 @@ resource "aws_bedrock_guardrail" "this" {
 
 resource "aws_bedrock_guardrail_version" "this" {
   guardrail_arn = aws_bedrock_guardrail.this.guardrail_arn
-  description   = "v1"
+  # Bedrock guardrail versions are immutable snapshots. This resource depends only
+  # on the ARN, so editing the guardrail above does NOT recreate it — the
+  # orchestrator would stay pinned to a stale snapshot. Bump this description
+  # (a force-new attribute) whenever the guardrail content changes.
+  description = "v2"
 }

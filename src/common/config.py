@@ -44,7 +44,7 @@ MAX_LIMIT = _int("MAX_LIMIT", 1000)
 
 EMBEDDING_MODEL_ID = _str("EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v2:0")
 
-MODEL_ID = _str("MODEL_ID", "anthropic.claude-sonnet-5-5")
+MODEL_ID = _str("MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 GUARDRAIL_ID = _str("GUARDRAIL_ID", "")
 GUARDRAIL_VERSION = _str("GUARDRAIL_VERSION", "")
 
