@@ -1,0 +1,102 @@
+credit_card_transactions:
+  description: >-
+    One row per credit card transaction, from 2019-01-01 through 2020-06-30.
+    Includes merchant, cardholder, location, timestamp and a fraud label.
+  business_meaning: >-
+    This is the core transaction fact table.  Each row records a single card
+    transaction.  The same card (cc_num) may appear many times; each transaction
+    is uniquely identified by trans_num.  Use this table for any question about
+    spending, transaction volume, merchants, categories, geography, demographics
+    or fraud.
+
+  usage_notes:
+    - amt is the transaction amount in USD.
+    - is_fraud is 0 (not fraud) or 1 (fraud); it is not null.
+    - trans_date_trans_time is a timestamp string in the form '2019-01-01 00:00:00'.
+      Use date_trunc to bucket it.  Partition columns year/month exist on the table.
+    - unix_time is the epoch timestamp of the transaction.
+    - cardholder name (first, last), street and cc_num are PII and must never be
+      returned to the user.  Aggregate instead.
+
+  metrics:
+    - "Total spend: sum(amt)"
+    - "Transaction count: count(*)"
+    - "Fraud rate: avg(is_fraud)"
+    - "Average transaction: avg(amt)"
+    - "Spend by category: sum(amt) group by category"
+
+  code_values:
+    is_fraud: "0 = not fraud, 1 = fraud"
+    gender: "M or F"
+    category: "Merchant category label (e.g. grocery_pos, gas_transport, shopping_net)"
+
+  join_keys:
+    - "cc_num links all transactions of one card (treat as PII, do not expose)."
+    - "trans_num is the unique transaction identifier."
+    - "merchant is the merchant name (deduplicate with trim if needed)."
+
+  columns:
+    trans_date_trans_time:
+      description: "Transaction timestamp as a string, e.g. '2019-01-01 00:00:00'."
+    cc_num:
+      description: "Credit card number (PII — never expose)."
+    merchant:
+      description: "Merchant name."
+    category:
+      description: "Merchant category label."
+    amt:
+      description: "Transaction amount in USD."
+    first:
+      description: "Cardholder first name (PII — never expose)."
+    last:
+      description: "Cardholder last name (PII — never expose)."
+    gender:
+      description: "Cardholder gender (M or F)."
+    street:
+      description: "Cardholder street address (PII — never expose)."
+    city:
+      description: "Cardholder city."
+    state:
+      description: "Cardholder state (two-letter code)."
+    zip:
+      description: "Cardholder ZIP code."
+    longitude:
+      description: "Cardholder longitude (renamed from 'long' at ingestion)."
+    latitude:
+      description: "Cardholder latitude."
+    city_pop:
+      description: "Cardholder city population."
+    job:
+      description: "Cardholder job title."
+    dob:
+      description: "Cardholder date of birth (PII — never expose)."
+    trans_num:
+      description: "Unique transaction identifier."
+    unix_time:
+      description: "Epoch timestamp of the transaction."
+    merch_long:
+      description: "Merchant longitude."
+    merch_lat:
+      description: "Merchant latitude."
+    is_fraud:
+      description: "Fraud label: 0 = not fraud, 1 = fraud."
+
+  example_questions:
+    - question: "What is the total transaction amount?"
+      answer: "Sum of amt across all transactions."
+      sql: "SELECT sum(amt) AS total_amount FROM \"text2sql_dev_lake\".\"credit_card_transactions\""
+    - question: "How many transactions were fraudulent?"
+      answer: "Count of rows where is_fraud = 1."
+      sql: "SELECT count(*) AS fraud_count FROM \"text2sql_dev_lake\".\"credit_card_transactions\" WHERE is_fraud = 1"
+    - question: "What is the average transaction amount by category?"
+      answer: "Average of amt grouped by category."
+      sql: "SELECT category, avg(amt) AS avg_amt FROM \"text2sql_dev_lake\".\"credit_card_transactions\" GROUP BY category ORDER BY avg_amt DESC LIMIT 20"
+    - question: "Which merchant had the highest total spend?"
+      answer: "Merchant with the largest sum of amt."
+      sql: "SELECT merchant, sum(amt) AS total FROM \"text2sql_dev_lake\".\"credit_card_transactions\" GROUP BY merchant ORDER BY total DESC LIMIT 1"
+    - question: "What is the fraud rate?"
+      answer: "Average of is_fraud."
+      sql: "SELECT avg(is_fraud) AS fraud_rate FROM \"text2sql_dev_lake\".\"credit_card_transactions\""
+    - question: "What was the spend in 2019 by month?"
+      answer: "Sum of amt bucketed by month of 2019."
+      sql: "SELECT date_trunc('month', date_parse(trans_date_trans_time, '%Y-%m-%d %H:%i:%s')) AS month, sum(amt) AS total FROM \"text2sql_dev_lake\".\"credit_card_transactions\" WHERE year = 2019 GROUP BY 1 ORDER BY 1 LIMIT 12"

@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# Terraform (commit the lock file, ignore state + working dir)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+.terraformrc
+terraform.rc
+
+# Data (never commit)
+*.csv
+*.parquet
+*.jsonl
+*.gz
+
+# Secrets / credentials (defense in depth — real creds live in ~/.aws)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

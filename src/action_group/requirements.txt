@@ -1,0 +1,2 @@
+# Deployed into the action-group Lambda (boto3 is provided by the runtime)
+sqlglot>=25

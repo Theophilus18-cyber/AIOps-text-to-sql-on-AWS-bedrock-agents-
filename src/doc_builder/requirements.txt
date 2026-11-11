@@ -1,0 +1,2 @@
+# Deployed into the doc-builder Lambda (boto3 is provided by the runtime)
+pyyaml>=6.0
