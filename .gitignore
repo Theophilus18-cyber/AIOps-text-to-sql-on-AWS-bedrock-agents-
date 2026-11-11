@@ -21,6 +21,7 @@ dist/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+*.tfplan
 crash.log
 override.tf
 override.tf.json

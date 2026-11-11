@@ -186,7 +186,6 @@ module "orchestrator" {
   zip_path                       = "${local.zip_root}/dist/orchestrator.zip"
   timeout                        = 120
   memory_size                    = 256
-  reserved_concurrent_executions = 10
   kms_key_arn                    = module.kms.arn
   environment = {
     REGION                = local.region

@@ -9,6 +9,7 @@ with), which must be a principal in the collection's data access policy.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -53,7 +54,11 @@ def _send(credentials, region: str, method: str, url: str, data: bytes) -> tuple
         method=method,
         url=url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            # AOSS rejects signatures that omit the payload hash; set it explicitly.
+            "X-Amz-Content-SHA256": hashlib.sha256(data).hexdigest(),
+        },
     )
     SigV4Auth(credentials, "aoss", region).add_auth(request)
 
