@@ -147,6 +147,10 @@ data "aws_iam_policy_document" "orchestrator" {
     resources = [module.lake_bucket.arn, "${module.lake_bucket.arn}/*"]
   }
   statement {
+    actions   = ["s3:GetBucketLocation"]
+    resources = [module.lake_bucket.arn]
+  }
+  statement {
     actions   = ["s3:PutObject"]
     resources = ["${module.lake_bucket.arn}/${var.athena_results_prefix}/*"]
   }
