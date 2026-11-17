@@ -146,16 +146,13 @@ data "aws_iam_policy_document" "orchestrator" {
     resources = ["arn:aws:athena:${local.region}:${local.account_id}:workgroup/${module.athena.workgroup_name}"]
   }
   statement {
-    actions = [
-      "s3:GetObject", "s3:ListBucket",
-      # Athena must resolve the output bucket's region before writing results;
-      # without this, StartQueryExecution fails with
-      # "Unable to verify/create output bucket".
-      "s3:GetBucketLocation",
-    ]
+    actions   = ["s3:GetObject", "s3:ListBucket"]
     resources = [module.lake_bucket.arn, "${module.lake_bucket.arn}/*"]
   }
   statement {
+    # Athena must resolve the output bucket's region before writing results;
+    # without this, StartQueryExecution fails with
+    # "Unable to verify/create output bucket".
     actions   = ["s3:GetBucketLocation"]
     resources = [module.lake_bucket.arn]
   }
