@@ -37,7 +37,10 @@ def render_table_doc(
         if text:
             lines.append(f"## {section.replace('_', ' ').title()}")
             lines.append("")
-            lines.append(text)
+            if isinstance(text, list):
+                lines.extend(f"- {item}" for item in text)
+            else:
+                lines.append(str(text))
             lines.append("")
 
     if entry.get("metrics"):

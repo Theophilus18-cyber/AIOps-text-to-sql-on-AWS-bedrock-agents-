@@ -10,7 +10,7 @@ output "knowledge_base_arn" {
 
 output "data_source_id" {
   description = "Data source ID"
-  value       = aws_bedrockagent_data_source.this.id
+  value       = aws_bedrockagent_data_source.this.data_source_id
 }
 
 output "role_arn" {

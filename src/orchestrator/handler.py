@@ -82,7 +82,7 @@ def _answer(question: str) -> str:
     client = aws.bedrock_runtime()
     messages: list[dict[str, Any]] = [{"role": "user", "content": [{"text": question}]}]
 
-    for _ in range(_MAX_TURNS):
+    for turn in range(_MAX_TURNS):
         response = client.converse(
             modelId=config.MODEL_ID,
             messages=messages,
@@ -93,6 +93,18 @@ def _answer(question: str) -> str:
         message = response["output"]["message"]
         messages.append(message)
         stop = response["stopReason"]
+        logger.info("turn %d stop=%s", turn, stop)
+        for block in message.get("content", []):
+            if "toolUse" in block:
+                use = block["toolUse"]
+                logger.info(
+                    "turn %d tool_use=%s input=%s",
+                    turn,
+                    use.get("name"),
+                    json.dumps(use.get("input"))[:500],
+                )
+            elif "text" in block:
+                logger.info("turn %d text=%s", turn, block["text"][:500])
 
         if stop == "tool_use":
             messages.append(_tool_results(message))
@@ -123,6 +135,7 @@ def _tool_results(message: dict[str, Any]) -> dict[str, Any]:
                 out = json.dumps({"error": f"unknown tool {name}"})
         except Exception as exc:
             out = json.dumps({"error": str(exc)})
+        logger.info("tool %s result=%s", name, out[:800])
         results.append(
             {
                 "toolResult": {

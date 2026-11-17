@@ -50,7 +50,10 @@ module "glue_catalog" {
   source          = "../../modules/glue_catalog"
   database_name   = local.glue_db
   crawler_name    = "${local.prefix}-lake-crawler"
-  s3_path         = "s3://${module.lake_bucket.bucket}/raw/"
+  # The crawler names each table after the last folder in its target path, so
+  # point it at the table folder (raw/<table>/) rather than raw/ — that keeps
+  # each dataset a separate table with year/month as partitions.
+  s3_path         = "s3://${module.lake_bucket.bucket}/raw/credit_card_transactions/"
   lake_bucket_arn = module.lake_bucket.arn
   kms_key_arn     = module.kms.arn
 }
@@ -125,7 +128,13 @@ data "aws_iam_policy_document" "orchestrator" {
     resources = ["arn:aws:athena:${local.region}:${local.account_id}:workgroup/${module.athena.workgroup_name}"]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:ListBucket"]
+    actions = [
+      "s3:GetObject", "s3:ListBucket",
+      # Athena must resolve the output bucket's region before writing results;
+      # without this, StartQueryExecution fails with
+      # "Unable to verify/create output bucket".
+      "s3:GetBucketLocation",
+    ]
     resources = [module.lake_bucket.arn, "${module.lake_bucket.arn}/*"]
   }
   statement {
@@ -222,9 +231,11 @@ data "aws_iam_policy_document" "doc_builder" {
     resources = ["${module.docs_bucket.arn}/${var.docs_prefix}*"]
   }
   statement {
-    actions = ["bedrock:StartIngestionJob"]
+    actions   = ["bedrock:StartIngestionJob"]
     resources = [
-      "arn:aws:bedrock:${local.region}:${local.account_id}:knowledge-base/${module.bedrock_kb.knowledge_base_id}/data-source/${module.bedrock_kb.data_source_id}",
+      # StartIngestionJob is authorized against the knowledge-base ARN,
+      # not the data-source ARN.
+      "arn:aws:bedrock:${local.region}:${local.account_id}:knowledge-base/${module.bedrock_kb.knowledge_base_id}",
     ]
   }
   statement {
