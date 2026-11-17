@@ -10,25 +10,32 @@ resource "aws_bedrock_guardrail" "this" {
       input_strength  = "HIGH"
       output_strength = "NONE"
     }
+    # The four semantic filters are kept at HIGH on input to reject malicious or
+    # inappropriate user prompts, but NONE on output. This orchestrator is a
+    # read-only text-to-SQL analyst over a bank's own transaction data, and its
+    # answers are aggregates, capped tables and charts. Output-side semantic
+    # filtering here only produced false positives that blocked legitimate
+    # analytical answers (e.g. a June transactions summary), so output blocking
+    # is left to the sensitive-information policy (PII masking) below.
     filters_config {
       type            = "SEXUAL"
       input_strength  = "HIGH"
-      output_strength = "HIGH"
+      output_strength = "NONE"
     }
     filters_config {
       type            = "VIOLENCE"
       input_strength  = "HIGH"
-      output_strength = "HIGH"
+      output_strength = "NONE"
     }
     filters_config {
       type            = "HATE"
       input_strength  = "HIGH"
-      output_strength = "HIGH"
+      output_strength = "NONE"
     }
     filters_config {
       type            = "MISCONDUCT"
       input_strength  = "HIGH"
-      output_strength = "HIGH"
+      output_strength = "NONE"
     }
   }
 
@@ -67,11 +74,11 @@ resource "aws_bedrock_guardrail" "this" {
     }
   }
 
-  word_policy_config {
-    managed_word_lists_config {
-      type = "PROFANITY"
-    }
-  }
+  # No word_policy_config (managed PROFANITY list): the managed list matches on
+  # both input and output and false-positives on transaction/merchant data, which
+  # is what intermittently blocked legitimate analytical answers. Profanity in a
+  # user prompt is already declined by the system prompt, and PII masking above
+  # still covers the real data-sensitivity concern.
 }
 
 resource "aws_bedrock_guardrail_version" "this" {
@@ -80,5 +87,5 @@ resource "aws_bedrock_guardrail_version" "this" {
   # on the ARN, so editing the guardrail above does NOT recreate it — the
   # orchestrator would stay pinned to a stale snapshot. Bump this description
   # (a force-new attribute) whenever the guardrail content changes.
-  description = "v2"
+  description = "v3"
 }

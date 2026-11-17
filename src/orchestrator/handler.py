@@ -19,6 +19,7 @@ setup(config.LOG_LEVEL)
 logger = get_logger(__name__)
 
 _MAX_TURNS = 10
+_MAX_HISTORY = 20  # last N prior messages kept for multi-turn context
 
 _SYSTEM = (
     "You are a senior SQL analyst for a data lake on AWS Athena.\n"
@@ -72,15 +73,18 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
     if not question:
         return {"error": "question is required."}
     try:
-        return {"answer": _answer(question)}
+        return {"answer": _answer(question, _history(event))}
     except Exception as exc:
         logger.exception("orchestration failed")
         return {"error": str(exc)}
 
 
-def _answer(question: str) -> str:
+def _answer(question: str, history: list[dict[str, str]] | None = None) -> str:
     client = aws.bedrock_runtime()
-    messages: list[dict[str, Any]] = [{"role": "user", "content": [{"text": question}]}]
+    # Seed the conversation with prior user/assistant turns so follow-up
+    # questions ("compare to 2020") keep context, then append this turn.
+    messages: list[dict[str, Any]] = _seed_history(history)
+    messages.append({"role": "user", "content": [{"text": question}]})
 
     for turn in range(_MAX_TURNS):
         response = client.converse(
@@ -112,6 +116,14 @@ def _answer(question: str) -> str:
 
         text = _message_text(message)
         if stop == "guardrail_intervened":
+            # Log the full guardrail trace so the exact filter/word/entity that
+            # intervened is visible in CloudWatch, instead of only the blocked
+            # messaging string. `trace.guardrail.outputAssessments` names the
+            # policy (content/word/sensitive-information) and the matched value.
+            logger.warning(
+                "guardrail intervened; trace=%s",
+                json.dumps(response.get("trace"), default=str)[:8000],
+            )
             return text or "Blocked by guardrail."
         return text or "No answer produced."
 
@@ -160,6 +172,35 @@ def _guardrail() -> dict[str, Any] | None:
 def _message_text(message: dict[str, Any]) -> str:
     parts = [block["text"] for block in message.get("content", []) if "text" in block]
     return "\n".join(parts)
+
+
+def _history(event: dict[str, Any]) -> list[dict[str, str]]:
+    """Extract a prior conversation from the event, if the client sent one.
+
+    Expected shape: ``[{"role": "user"|"assistant", "content": "..."}, ...]``.
+    Malformed entries are dropped; the caller caps the count.
+    """
+    raw = event.get("history")
+    if not isinstance(raw, list):
+        return []
+    history: list[dict[str, str]] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        role = entry.get("role")
+        content = entry.get("content")
+        if role in ("user", "assistant") and isinstance(content, str) and content.strip():
+            history.append({"role": role, "content": content.strip()})
+    return history
+
+
+def _seed_history(history: list[dict[str, str]] | None) -> list[dict[str, Any]]:
+    """Build the ``converse`` message list from prior turns, capped to a
+    bounded window so multi-turn context never grows without limit."""
+    messages: list[dict[str, Any]] = []
+    for entry in (history or [])[-_MAX_HISTORY:]:
+        messages.append({"role": entry["role"], "content": [{"text": entry["content"]}]})
+    return messages
 
 
 def _question(event: dict[str, Any]) -> str:

@@ -72,11 +72,15 @@ class Handler(BaseHTTPRequestHandler):
         if not question:
             self._json(400, {"error": "question is required."})
             return
+        history = req.get("history") if isinstance(req.get("history"), list) else []
         try:
+            payload = {"question": question}
+            if history:
+                payload["history"] = history
             response = self.client.invoke(
                 FunctionName=self.function_name,
                 InvocationType="RequestResponse",
-                Payload=json.dumps({"question": question}),
+                Payload=json.dumps(payload),
             )
             payload = json.loads(response["Payload"].read().decode("utf-8"))
             if "FunctionError" in response:

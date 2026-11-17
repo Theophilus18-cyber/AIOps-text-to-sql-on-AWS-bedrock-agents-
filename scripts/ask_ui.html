@@ -196,6 +196,23 @@
     button.run:hover { background: var(--ink-soft); }
   }
 
+  button.ghost {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: border-color 0.15s var(--ease), color 0.15s var(--ease), transform 0.12s var(--ease);
+  }
+  button.ghost:hover { border-color: var(--red); color: var(--red-ink); }
+  button.ghost:active { transform: scale(0.98); }
+  button.ghost:disabled { opacity: 0.45; cursor: default; }
+  button.ghost:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
   .hint {
     font-family: var(--mono);
     font-size: 12px;
@@ -235,7 +252,7 @@
   .suggestions button:hover { border-color: var(--red); color: var(--red-ink); }
   .suggestions button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 
-  /* Output */
+  /* Conversation */
   #out { margin-top: 32px; }
   .status {
     font-family: var(--mono);
@@ -249,35 +266,52 @@
   .status.ok { color: var(--ink-soft); }
   .status.error { color: var(--red-ink); }
 
-  #answer {
+  .turn { margin-bottom: 24px; }
+  .turn:last-child { margin-bottom: 0; }
+  .turn-q {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 8px;
+  }
+  .turn-q .who {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    flex: none;
+  }
+  .turn-q .qtext { color: var(--ink-soft); font-size: 14px; }
+
+  .turn-a {
     background: var(--raised);
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 24px;
     font-size: 14px;
   }
-  #answer:empty { display: none; }
-  #answer.enter { animation: rise 0.4s var(--ease); }
+  .turn-a.enter { animation: rise 0.4s var(--ease); }
+  .turn-a.err { color: var(--red-ink); font-family: var(--mono); font-size: 13px; }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   /* Markdown rendering */
-  #answer h1, #answer h2, #answer h3, #answer h4 {
+  .turn-a h1, .turn-a h2, .turn-a h3, .turn-a h4 {
     font-weight: 500;
     line-height: 1.3;
     margin: 1.4em 0 0.5em;
   }
-  #answer h1 { font-size: 20px; }
-  #answer h2 {
+  .turn-a h1 { font-size: 20px; }
+  .turn-a h2 {
     font-size: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--line);
   }
-  #answer h3 { font-size: 14px; font-weight: 600; }
-  #answer h1:first-child, #answer h2:first-child, #answer h3:first-child, #answer h4:first-child { margin-top: 0; }
-  #answer p { margin: 0.6em 0; }
-  #answer ul, #answer ol { padding-left: 24px; margin: 0.6em 0; }
-  #answer li { margin: 0.25em 0; }
-  #answer code {
+  .turn-a h3 { font-size: 14px; font-weight: 600; }
+  .turn-a h1:first-child, .turn-a h2:first-child, .turn-a h3:first-child, .turn-a h4:first-child { margin-top: 0; }
+  .turn-a p { margin: 0.6em 0; }
+  .turn-a ul, .turn-a ol { padding-left: 24px; margin: 0.6em 0; }
+  .turn-a li { margin: 0.25em 0; }
+  .turn-a code {
     font-family: var(--mono);
     font-size: 0.9em;
     background: var(--blush);
@@ -285,7 +319,7 @@
     border-radius: 4px;
     color: var(--red-ink);
   }
-  #answer pre {
+  .turn-a pre {
     background: #141210;
     color: #F2ECE6;
     padding: 16px;
@@ -295,37 +329,37 @@
     font-size: 12.5px;
     line-height: 1.5;
   }
-  #answer pre code { background: none; color: inherit; padding: 0; border-radius: 0; font-size: inherit; }
-  #answer blockquote {
+  .turn-a pre code { background: none; color: inherit; padding: 0; border-radius: 0; font-size: inherit; }
+  .turn-a blockquote {
     margin: 0.8em 0;
     padding: 4px 0 4px 16px;
     border-left: 3px solid var(--line);
     color: var(--ink-soft);
   }
-  #answer table {
+  .turn-a table {
     border-collapse: collapse;
     margin: 1em 0;
     width: 100%;
     font-size: 13px;
     font-variant-numeric: tabular-nums;
   }
-  #answer th, #answer td {
+  .turn-a th, .turn-a td {
     border: 1px solid var(--line);
     padding: 8px 12px;
     text-align: left;
     vertical-align: top;
   }
-  #answer th {
+  .turn-a th {
     background: var(--red);
     color: #fff;
     font-weight: 500;
     font-family: var(--mono);
     font-size: 12px;
   }
-  #answer tr:nth-child(even) td { background: var(--paper); }
-  #answer a { color: var(--red-ink); }
+  .turn-a tr:nth-child(even) td { background: var(--paper); }
+  .turn-a a { color: var(--red-ink); }
   @media (prefers-color-scheme: dark) {
-    #answer th { background: #A90C2B; }
+    .turn-a th { background: #A90C2B; }
   }
 
   #copy {
@@ -372,12 +406,13 @@
 
   <main>
     <h1>Ask the orchestrator</h1>
-    <p class="lede">Ask in plain English. It retrieves the schema, writes the SQL and runs it on Athena against the live dev stack, then returns the numbers.</p>
+    <p class="lede">Ask in plain English. It retrieves the schema, writes the SQL and runs it on Athena against the live dev stack, then returns the numbers. Follow-ups keep the conversation.</p>
 
     <form id="form" autocomplete="off">
       <textarea id="question" class="question" placeholder="total transactions in January 2019, by category" spellcheck="false"></textarea>
       <div class="toolbar">
         <button type="submit" class="run" id="run">Run</button>
+        <button type="button" class="ghost" id="newSession">New session</button>
         <span class="hint"><kbd>Ctrl</kbd><kbd>&#9166;</kbd> to run</span>
       </div>
       <div class="suggestions">
@@ -389,7 +424,7 @@
 
     <div id="out">
       <div class="status" id="status"></div>
-      <div id="answer"></div>
+      <div id="conversation"></div>
     </div>
   </main>
 </div>
@@ -399,15 +434,77 @@
   const form = document.getElementById('form');
   const input = document.getElementById('question');
   const run = document.getElementById('run');
+  const newSession = document.getElementById('newSession');
   const live = document.getElementById('live');
   const statusEl = document.getElementById('status');
-  const answerEl = document.getElementById('answer');
+  const conversationEl = document.getElementById('conversation');
   const copyEl = document.createElement('button');
   copyEl.id = 'copy';
   copyEl.textContent = 'copy';
   copyEl.hidden = true;
 
   let lastRaw = '';
+  let history = loadHistory();
+
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem('text2sql.history');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(function (e) {
+          return e && (e.role === 'user' || e.role === 'assistant') && typeof e.content === 'string';
+        });
+      }
+    } catch (err) { /* storage may be unavailable; start fresh */ }
+    return [];
+  }
+
+  function saveHistory() {
+    try { localStorage.setItem('text2sql.history', JSON.stringify(history)); }
+    catch (err) { /* ignore */ }
+  }
+
+  function appendTurn(q, md, isErr) {
+    const turn = document.createElement('article');
+    turn.className = 'turn';
+
+    const qWrap = document.createElement('div');
+    qWrap.className = 'turn-q';
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = 'you';
+    const qtext = document.createElement('span');
+    qtext.className = 'qtext';
+    qtext.textContent = q;
+    qWrap.appendChild(who);
+    qWrap.appendChild(qtext);
+    turn.appendChild(qWrap);
+
+    if (md != null) {
+      const a = document.createElement('div');
+      a.className = isErr ? 'turn-a err enter' : 'turn-a enter';
+      if (isErr || !window.marked) {
+        a.textContent = md;
+      } else {
+        a.innerHTML = window.marked.parse(md);
+      }
+      turn.appendChild(a);
+    }
+
+    conversationEl.appendChild(turn);
+  }
+
+  function renderHistory() {
+    conversationEl.innerHTML = '';
+    for (let i = 0; i < history.length; i += 2) {
+      const user = history[i];
+      const asst = history[i + 1];
+      if (user && user.role === 'user') {
+        appendTurn(user.content, asst ? asst.content : null, false);
+      }
+    }
+  }
 
   document.querySelectorAll('.suggestions button').forEach(function (b) {
     b.addEventListener('click', function () { input.value = b.textContent; input.focus(); });
@@ -417,17 +514,28 @@
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) form.dispatchEvent(new Event('submit'));
   });
 
+  newSession.addEventListener('click', function () {
+    history = [];
+    saveHistory();
+    conversationEl.innerHTML = '';
+    statusEl.className = 'status';
+    statusEl.textContent = '';
+    copyEl.hidden = true;
+    lastRaw = '';
+    live.className = 'dot live';
+    input.focus();
+  });
+
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
     const q = input.value.trim();
     if (!q) return;
 
     run.disabled = true;
+    newSession.disabled = true;
     live.className = 'dot busy';
     statusEl.className = 'status';
     statusEl.textContent = 'running…';
-    answerEl.innerHTML = '';
-    answerEl.classList.remove('enter');
     copyEl.hidden = true;
 
     const t0 = performance.now();
@@ -435,7 +543,7 @@
       const res = await fetch('/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q })
+        body: JSON.stringify({ question: q, history: history })
       });
       const data = await res.json();
       const ms = Math.round(performance.now() - t0);
@@ -444,48 +552,31 @@
         live.className = 'dot dead';
         statusEl.className = 'status error';
         statusEl.textContent = 'error · ' + (ms / 1000).toFixed(1) + 's';
-        answerEl.textContent = '';
-        const pre = document.createElement('pre');
-        pre.textContent = data.error;
-        answerEl.appendChild(pre);
+        appendTurn(q, data.error, true);
       } else {
         live.className = 'dot live';
         statusEl.className = 'status ok';
         statusEl.textContent = 'ok · ' + (ms / 1000).toFixed(1) + 's';
         lastRaw = data.answer;
-        render(data.answer);
+        history.push({ role: 'user', content: q });
+        history.push({ role: 'assistant', content: data.answer });
+        saveHistory();
+        appendTurn(q, data.answer, false);
+        if (!statusEl.contains(copyEl)) statusEl.appendChild(copyEl);
         copyEl.hidden = false;
       }
     } catch (err) {
       live.className = 'dot dead';
       statusEl.className = 'status error';
       statusEl.textContent = 'network error';
-      answerEl.textContent = '';
-      const pre = document.createElement('pre');
-      pre.textContent = String(err);
-      answerEl.appendChild(pre);
+      appendTurn(q, String(err), true);
     } finally {
       run.disabled = false;
+      newSession.disabled = false;
+      input.value = '';
+      input.focus();
     }
   });
-
-  function render(md) {
-    if (window.marked) {
-      answerEl.innerHTML = window.marked.parse(md);
-    } else {
-      const pre = document.createElement('pre');
-      pre.textContent = md;
-      answerEl.innerHTML = '';
-      answerEl.appendChild(pre);
-    }
-    answerEl.classList.remove('enter');
-    void answerEl.offsetWidth;
-    answerEl.classList.add('enter');
-    const status = document.querySelector('.status');
-    if (status && !status.contains(copyEl)) {
-      status.appendChild(copyEl);
-    }
-  }
 
   copyEl.addEventListener('click', function () {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -501,6 +592,8 @@
     copyEl.textContent = 'copied';
     setTimeout(function () { copyEl.textContent = 'copy'; }, 1200);
   });
+
+  renderHistory();
 </script>
 </body>
 </html>
