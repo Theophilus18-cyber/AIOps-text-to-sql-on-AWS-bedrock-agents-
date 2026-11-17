@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -37,28 +38,29 @@ class Handler(BaseHTTPRequestHandler):
     env = "dev"
     region = "us-east-1"
     client = None
+    ready = threading.Event()
 
     def do_GET(self) -> None:
-        if self.path in ("/", "/index.html"):
-            body = (
-                _UI.replace("__FN__", self.function_name)
-                .replace("__ENV__", self.env)
-                .replace("__REGION__", self.region)
-                .encode("utf-8")
-            )
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-        else:
+        if self.path not in ("/", "/index.html"):
             self.send_response(404)
             self.end_headers()
+            return
+        if not self._await_name():
+            return
+        body = (
+            _UI.replace("__FN__", self.function_name)
+            .replace("__ENV__", self.env)
+            .replace("__REGION__", self.region)
+            .encode("utf-8")
+        )
+        self._html(200, body)
 
     def do_POST(self) -> None:
         if self.path != "/ask":
             self.send_response(404)
             self.end_headers()
+            return
+        if not self._await_name():
             return
         length = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(length)
@@ -85,6 +87,20 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001 - surface any failure to the UI
             self._json(500, {"error": str(exc)})
 
+    def _await_name(self) -> bool:
+        """Block until the background resolver finishes, or fail with an error."""
+        if self.ready.wait(timeout=60) and self.function_name:
+            return True
+        self._json(500, {"error": "could not resolve the orchestrator function name (check `terraform output`)."})
+        return False
+
+    def _html(self, status: int, body: bytes) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _json(self, status: int, obj: dict) -> None:
         body = json.dumps(obj).encode("utf-8")
         self.send_response(status)
@@ -99,19 +115,32 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     args = _parse_args()
-    name = terraform_output(args.env, "orchestrator_function_name")
     session = boto3.Session(profile_name=args.profile)
-    Handler.function_name = name
     Handler.env = args.env
     Handler.region = session.region_name or "us-east-1"
     Handler.client = session.client("lambda")
+
+    # Resolve the function name in the background. `terraform output` takes a
+    # few seconds on Windows, and running it before binding the socket is what
+    # made the browser report ERR_CONNECTION_REFUSED during startup. Binding
+    # first and resolving in a thread means the port is open immediately.
+    def _resolve() -> None:
+        try:
+            Handler.function_name = terraform_output(args.env, "orchestrator_function_name")
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write(f"[ask] failed to resolve function name: {exc}\n")
+        finally:
+            Handler.ready.set()
+
+    threading.Thread(target=_resolve, daemon=True).start()
+
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"Serving http://127.0.0.1:{args.port}  (env={args.env}, function={name})")
-    print("Press Ctrl+C to stop.")
+    print(f"Serving http://127.0.0.1:{args.port}  (env={args.env})", flush=True)
+    print("Press Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print("\nStopped.", flush=True)
 
 
 if __name__ == "__main__":
