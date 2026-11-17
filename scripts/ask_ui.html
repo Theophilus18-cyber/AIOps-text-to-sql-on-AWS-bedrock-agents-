@@ -6,7 +6,7 @@
 <title>text2sql — orchestrator console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --red:       #D0021B;
@@ -19,14 +19,15 @@
     --ink-soft:  #5A524C;
     --ink-faint: #8A8079;
     --line:      #E7E0DA;
+    --ease:      cubic-bezier(0.22, 1, 0.36, 1);
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
     --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --red:       #E4293A;
-      --red-deep:  #FF5A66;
-      --red-ink:   #FF6B76;
+      --red-deep:  #C2022F;
+      --red-ink:   #FF7A85;
       --blush:     #2B1714;
       --paper:     #141210;
       --raised:    #1C1917;
@@ -48,6 +49,7 @@
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
+  button, textarea { font-family: inherit; }
 
   /* Header */
   header {
@@ -55,24 +57,29 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 14px 20px;
+    height: 56px;
+    padding: 0 24px;
     border-bottom: 1px solid var(--line);
     background: var(--raised);
   }
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: 0.02em;
+    font-size: 14px;
   }
   .brand .dot {
-    width: 10px; height: 10px;
+    width: 8px; height: 8px;
     border-radius: 50%;
-    background: var(--red);
+    background: var(--line);
+    flex: none;
   }
-  .brand b { font-weight: 600; color: var(--ink); }
+  .brand .dot.live { background: var(--red); }
+  .brand .dot.busy { background: var(--red); animation: pulse 1.2s var(--ease) infinite; }
+  .brand .dot.dead { background: var(--ink-faint); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .brand b { font-weight: 500; color: var(--ink); }
   .brand .sub { color: var(--ink-faint); }
   .meta {
     display: flex;
@@ -86,9 +93,8 @@
   /* Layout */
   .layout {
     display: grid;
-    grid-template-columns: 190px 1fr;
-    gap: 0;
-    min-height: calc(100vh - 54px);
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 56px);
   }
   @media (max-width: 720px) {
     .layout { grid-template-columns: 1fr; }
@@ -98,112 +104,147 @@
   /* Left rail — pipeline legend */
   aside {
     border-right: 1px solid var(--line);
-    padding: 22px 18px;
+    padding: 16px;
     background: var(--raised);
   }
   aside .kicker {
     font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.02em;
     color: var(--ink-faint);
-    margin-bottom: 14px;
+    margin: 0 0 12px;
   }
   .steps { list-style: none; margin: 0; padding: 0; }
   .steps li {
     position: relative;
-    padding: 0 0 18px 22px;
+    padding: 0 0 16px 24px;
     border-left: 1px solid var(--line);
   }
   .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
   .steps li::before {
     content: "";
     position: absolute;
-    left: -4px; top: 2px;
-    width: 7px; height: 7px;
+    left: -4px; top: 4px;
+    width: 8px; height: 8px;
     border-radius: 50%;
-    background: var(--ink-faint);
+    background: var(--line);
+    border: 1px solid var(--raised);
   }
-  .steps li.lead::before { background: var(--red); }
-  .steps .t { font-size: 13px; font-weight: 600; color: var(--ink); }
-  .steps .d { font-size: 12px; color: var(--ink-faint); line-height: 1.4; }
+  .steps .t { display: block; font-size: 13px; font-weight: 500; color: var(--ink); }
+  .steps .d { display: block; font-size: 12px; color: var(--ink-faint); line-height: 1.4; margin-top: 2px; }
 
   /* Main */
-  main { padding: 26px 24px 40px; max-width: 860px; }
+  main {
+    padding: 32px 24px 48px;
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+  }
   main h1 {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.2;
     margin: 0 0 4px;
   }
-  main .lede { color: var(--ink-soft); margin: 0 0 22px; font-size: 14px; }
+  main .lede { color: var(--ink-soft); margin: 0 0 24px; font-size: 14px; }
 
   .question {
     width: 100%;
-    min-height: 74px;
+    min-height: 80px;
     resize: vertical;
-    padding: 14px 16px;
+    padding: 16px;
     font-family: var(--mono);
     font-size: 14px;
     line-height: 1.5;
     color: var(--ink);
     background: var(--raised);
     border: 1px solid var(--line);
-    border-left: 3px solid var(--red);
+    border-left: 3px solid var(--line);
+    border-radius: 8px;
     outline: none;
+    transition: border-color 0.15s var(--ease);
   }
-  .question:focus { border-color: var(--red); border-left-color: var(--red); }
+  .question:hover { border-color: var(--ink-faint); }
+  .question:focus { border-left-color: var(--red); }
+  .question::placeholder { color: var(--ink-faint); }
 
   .toolbar {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 12px;
+    margin-top: 16px;
     flex-wrap: wrap;
   }
   button.run {
     font-family: var(--mono);
     font-size: 13px;
     font-weight: 500;
-    letter-spacing: 0.03em;
     color: #fff;
     background: var(--red);
     border: 0;
-    padding: 10px 22px;
+    border-radius: 8px;
+    padding: 10px 24px;
     cursor: pointer;
+    transition: background-color 0.15s var(--ease), transform 0.12s var(--ease);
   }
   button.run:hover { background: var(--red-deep); }
+  button.run:active { transform: scale(0.98); }
   button.run:disabled { opacity: 0.45; cursor: default; }
+  button.run:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  @media (prefers-color-scheme: dark) {
+    button.run { background: var(--ink); color: var(--paper); }
+    button.run:hover { background: var(--ink-soft); }
+  }
+
   .hint {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  kbd {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    line-height: 1.5;
   }
   .suggestions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    margin-top: 14px;
+    margin-top: 16px;
   }
   .suggestions button {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-soft);
     background: transparent;
     border: 1px solid var(--line);
-    padding: 5px 10px;
+    border-radius: 6px;
+    padding: 4px 12px;
     cursor: pointer;
+    transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
   }
   .suggestions button:hover { border-color: var(--red); color: var(--red-ink); }
+  .suggestions button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 
   /* Output */
-  #out { margin-top: 30px; }
+  #out { margin-top: 32px; }
   .status {
     font-family: var(--mono);
     font-size: 12px;
     color: var(--ink-faint);
-    margin-bottom: 14px;
-    min-height: 18px;
+    margin-bottom: 16px;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
   }
   .status.ok { color: var(--ink-soft); }
   .status.error { color: var(--red-ink); }
@@ -211,51 +252,54 @@
   #answer {
     background: var(--raised);
     border: 1px solid var(--line);
-    padding: 22px 26px;
+    border-radius: 12px;
+    padding: 24px;
     font-size: 14px;
   }
   #answer:empty { display: none; }
+  #answer.enter { animation: rise 0.4s var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   /* Markdown rendering */
   #answer h1, #answer h2, #answer h3, #answer h4 {
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 500;
     line-height: 1.3;
     margin: 1.4em 0 0.5em;
   }
   #answer h1 { font-size: 20px; }
   #answer h2 {
     font-size: 16px;
-    padding-bottom: 6px;
-    border-bottom: 2px solid var(--red);
-    display: inline-block;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
   }
-  #answer h3 { font-size: 14px; }
+  #answer h3 { font-size: 14px; font-weight: 600; }
+  #answer h1:first-child, #answer h2:first-child, #answer h3:first-child, #answer h4:first-child { margin-top: 0; }
   #answer p { margin: 0.6em 0; }
-  #answer ul, #answer ol { padding-left: 22px; margin: 0.6em 0; }
+  #answer ul, #answer ol { padding-left: 24px; margin: 0.6em 0; }
   #answer li { margin: 0.25em 0; }
   #answer code {
     font-family: var(--mono);
     font-size: 0.9em;
     background: var(--blush);
-    padding: 1px 5px;
+    padding: 2px 6px;
+    border-radius: 4px;
     color: var(--red-ink);
   }
   #answer pre {
     background: #141210;
     color: #F2ECE6;
-    padding: 14px 16px;
+    padding: 16px;
     overflow-x: auto;
-    border-left: 3px solid var(--red);
+    border-radius: 8px;
     font-family: var(--mono);
     font-size: 12.5px;
     line-height: 1.5;
   }
-  #answer pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  #answer pre code { background: none; color: inherit; padding: 0; border-radius: 0; font-size: inherit; }
   #answer blockquote {
     margin: 0.8em 0;
-    padding: 4px 0 4px 14px;
-    border-left: 3px solid var(--red);
+    padding: 4px 0 4px 16px;
+    border-left: 3px solid var(--line);
     color: var(--ink-soft);
   }
   #answer table {
@@ -263,40 +307,48 @@
     margin: 1em 0;
     width: 100%;
     font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
   #answer th, #answer td {
     border: 1px solid var(--line);
-    padding: 7px 10px;
+    padding: 8px 12px;
     text-align: left;
     vertical-align: top;
   }
   #answer th {
     background: var(--red);
     color: #fff;
-    font-weight: 600;
+    font-weight: 500;
     font-family: var(--mono);
     font-size: 12px;
   }
   #answer tr:nth-child(even) td { background: var(--paper); }
   #answer a { color: var(--red-ink); }
+  @media (prefers-color-scheme: dark) {
+    #answer th { background: #A90C2B; }
+  }
 
   #copy {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-soft);
-    background: transparent;
+    background: var(--raised);
     border: 1px solid var(--line);
-    padding: 4px 10px;
+    border-radius: 6px;
+    padding: 4px 12px;
     cursor: pointer;
     margin-left: 12px;
+    transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
   }
+  #copy:hover { border-color: var(--red); color: var(--red-ink); }
+  #copy:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   #copy[hidden] { display: none; }
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <span class="dot"></span>
+    <span class="dot live" id="live"></span>
     <b>text2sql</b>
     <span class="sub">orchestrator console</span>
   </div>
@@ -311,22 +363,22 @@
   <aside>
     <div class="kicker">Pipeline</div>
     <ol class="steps">
-      <li class="lead"><span class="t">Question</span><span class="d">your prompt, verbatim</span></li>
-      <li class="lead"><span class="t">Schema</span><span class="d">Bedrock KB retrieve</span></li>
-      <li class="lead"><span class="t">SQL</span><span class="d">sqlglot validate + Athena</span></li>
-      <li class="lead"><span class="t">Answer</span><span class="d">Claude converse, guardrailed</span></li>
+      <li><span class="t">Question</span><span class="d">your prompt, verbatim</span></li>
+      <li><span class="t">Schema</span><span class="d">Bedrock KB retrieve</span></li>
+      <li><span class="t">SQL</span><span class="d">sqlglot validate · Athena</span></li>
+      <li><span class="t">Answer</span><span class="d">Claude converse, guardrailed</span></li>
     </ol>
   </aside>
 
   <main>
     <h1>Ask the orchestrator</h1>
-    <p class="lede">One question in, one answer out. The full tool loop runs against the live dev stack — nothing is mocked.</p>
+    <p class="lede">Ask in plain English. It retrieves the schema, writes the SQL and runs it on Athena against the live dev stack, then returns the numbers.</p>
 
     <form id="form" autocomplete="off">
-      <textarea id="question" class="question" placeholder="e.g. total transactions in January 2019 by category" spellcheck="false"></textarea>
+      <textarea id="question" class="question" placeholder="total transactions in January 2019, by category" spellcheck="false"></textarea>
       <div class="toolbar">
         <button type="submit" class="run" id="run">Run</button>
-        <span class="hint">ctrl&#8209;enter to run</span>
+        <span class="hint"><kbd>Ctrl</kbd><kbd>&#9166;</kbd> to run</span>
       </div>
       <div class="suggestions">
         <button type="button">total transactions in January 2019</button>
@@ -347,11 +399,12 @@
   const form = document.getElementById('form');
   const input = document.getElementById('question');
   const run = document.getElementById('run');
+  const live = document.getElementById('live');
   const statusEl = document.getElementById('status');
   const answerEl = document.getElementById('answer');
   const copyEl = document.createElement('button');
   copyEl.id = 'copy';
-  copyEl.textContent = 'copy raw';
+  copyEl.textContent = 'copy';
   copyEl.hidden = true;
 
   let lastRaw = '';
@@ -370,9 +423,11 @@
     if (!q) return;
 
     run.disabled = true;
+    live.className = 'dot busy';
     statusEl.className = 'status';
     statusEl.textContent = 'running…';
     answerEl.innerHTML = '';
+    answerEl.classList.remove('enter');
     copyEl.hidden = true;
 
     const t0 = performance.now();
@@ -386,6 +441,7 @@
       const ms = Math.round(performance.now() - t0);
 
       if (data.error) {
+        live.className = 'dot dead';
         statusEl.className = 'status error';
         statusEl.textContent = 'error · ' + (ms / 1000).toFixed(1) + 's';
         answerEl.textContent = '';
@@ -393,6 +449,7 @@
         pre.textContent = data.error;
         answerEl.appendChild(pre);
       } else {
+        live.className = 'dot live';
         statusEl.className = 'status ok';
         statusEl.textContent = 'ok · ' + (ms / 1000).toFixed(1) + 's';
         lastRaw = data.answer;
@@ -400,6 +457,7 @@
         copyEl.hidden = false;
       }
     } catch (err) {
+      live.className = 'dot dead';
       statusEl.className = 'status error';
       statusEl.textContent = 'network error';
       answerEl.textContent = '';
@@ -420,6 +478,9 @@
       answerEl.innerHTML = '';
       answerEl.appendChild(pre);
     }
+    answerEl.classList.remove('enter');
+    void answerEl.offsetWidth;
+    answerEl.classList.add('enter');
     const status = document.querySelector('.status');
     if (status && !status.contains(copyEl)) {
       status.appendChild(copyEl);
@@ -438,7 +499,7 @@
       document.body.removeChild(ta);
     }
     copyEl.textContent = 'copied';
-    setTimeout(function () { copyEl.textContent = 'copy raw'; }, 1200);
+    setTimeout(function () { copyEl.textContent = 'copy'; }, 1200);
   });
 </script>
 </body>

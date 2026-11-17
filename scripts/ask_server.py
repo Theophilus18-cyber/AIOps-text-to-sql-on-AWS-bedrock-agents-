@@ -113,6 +113,21 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write("[ask] " + fmt % args + "\n")
 
 
+def _find_orchestrator(client, env: str) -> str:
+    """Resolve the orchestrator function name from the Lambda API.
+
+    This mirrors the Terraform name ``<project>-<env>-orchestrator`` without
+    hardcoding an account ID, region or ARN, and without reading state from S3.
+    """
+    suffix = f"-{env}-orchestrator"
+    for page in client.get_paginator("list_functions").paginate():
+        for fn in page.get("Functions", []):
+            name = fn.get("FunctionName", "")
+            if name.endswith(suffix):
+                return name
+    raise RuntimeError(f"no Lambda function ending in {suffix!r}")
+
+
 def main() -> None:
     args = _parse_args()
     session = boto3.Session(profile_name=args.profile)
@@ -124,11 +139,19 @@ def main() -> None:
     # few seconds on Windows, and running it before binding the socket is what
     # made the browser report ERR_CONNECTION_REFUSED during startup. Binding
     # first and resolving in a thread means the port is open immediately.
+    #
+    # `terraform output` reads the backend state out of S3, so when that is
+    # unavailable the server falls back to a Lambda API lookup (same
+    # deterministic name, no S3 dependency).
     def _resolve() -> None:
         try:
-            Handler.function_name = terraform_output(args.env, "orchestrator_function_name")
+            Handler.function_name = terraform_output(args.env, "orchestrator_function_name", profile=args.profile)
         except Exception as exc:  # noqa: BLE001
-            sys.stderr.write(f"[ask] failed to resolve function name: {exc}\n")
+            sys.stderr.write(f"[ask] terraform output failed ({exc}); trying Lambda lookup\n")
+            try:
+                Handler.function_name = _find_orchestrator(Handler.client, args.env)
+            except Exception as fallback:  # noqa: BLE001
+                sys.stderr.write(f"[ask] failed to resolve function name: {fallback}\n")
         finally:
             Handler.ready.set()
 
