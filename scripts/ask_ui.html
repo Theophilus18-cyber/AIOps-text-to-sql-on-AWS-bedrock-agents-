@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>text2sql — orchestrator console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red:       #D0021B;
+    --red-deep:  #A90C2B;
+    --red-ink:   #A90C2B;
+    --blush:     #FCE9E4;
+    --paper:     #FBF8F5;
+    --raised:    #FFFFFF;
+    --ink:       #17120F;
+    --ink-soft:  #5A524C;
+    --ink-faint: #8A8079;
+    --line:      #E7E0DA;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --red:       #E4293A;
+      --red-deep:  #FF5A66;
+      --red-ink:   #FF6B76;
+      --blush:     #2B1714;
+      --paper:     #141210;
+      --raised:    #1C1917;
+      --ink:       #F2ECE6;
+      --ink-soft:  #B9AEA4;
+      --ink-faint: #837A72;
+      --line:      #2A2521;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--raised);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .brand .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+  }
+  .brand b { font-weight: 600; color: var(--ink); }
+  .brand .sub { color: var(--ink-faint); }
+  .meta {
+    display: flex;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .meta span b { color: var(--ink); font-weight: 500; }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 54px);
+  }
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { border-right: 0 !important; border-bottom: 1px solid var(--line); }
+  }
+
+  /* Left rail — pipeline legend */
+  aside {
+    border-right: 1px solid var(--line);
+    padding: 22px 18px;
+    background: var(--raised);
+  }
+  aside .kicker {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+  }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps li {
+    position: relative;
+    padding: 0 0 18px 22px;
+    border-left: 1px solid var(--line);
+  }
+  .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .steps li::before {
+    content: "";
+    position: absolute;
+    left: -4px; top: 2px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+  }
+  .steps li.lead::before { background: var(--red); }
+  .steps .t { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .steps .d { font-size: 12px; color: var(--ink-faint); line-height: 1.4; }
+
+  /* Main */
+  main { padding: 26px 24px 40px; max-width: 860px; }
+  main h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+  }
+  main .lede { color: var(--ink-soft); margin: 0 0 22px; font-size: 14px; }
+
+  .question {
+    width: 100%;
+    min-height: 74px;
+    resize: vertical;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--red);
+    outline: none;
+  }
+  .question:focus { border-color: var(--red); border-left-color: var(--red); }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  button.run {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: var(--red);
+    border: 0;
+    padding: 10px 22px;
+    cursor: pointer;
+  }
+  button.run:hover { background: var(--red-deep); }
+  button.run:disabled { opacity: 0.45; cursor: default; }
+  .hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .suggestions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .suggestions button {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  .suggestions button:hover { border-color: var(--red); color: var(--red-ink); }
+
+  /* Output */
+  #out { margin-top: 30px; }
+  .status {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+    min-height: 18px;
+  }
+  .status.ok { color: var(--ink-soft); }
+  .status.error { color: var(--red-ink); }
+
+  #answer {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    padding: 22px 26px;
+    font-size: 14px;
+  }
+  #answer:empty { display: none; }
+
+  /* Markdown rendering */
+  #answer h1, #answer h2, #answer h3, #answer h4 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin: 1.4em 0 0.5em;
+  }
+  #answer h1 { font-size: 20px; }
+  #answer h2 {
+    font-size: 16px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--red);
+    display: inline-block;
+  }
+  #answer h3 { font-size: 14px; }
+  #answer p { margin: 0.6em 0; }
+  #answer ul, #answer ol { padding-left: 22px; margin: 0.6em 0; }
+  #answer li { margin: 0.25em 0; }
+  #answer code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--blush);
+    padding: 1px 5px;
+    color: var(--red-ink);
+  }
+  #answer pre {
+    background: #141210;
+    color: #F2ECE6;
+    padding: 14px 16px;
+    overflow-x: auto;
+    border-left: 3px solid var(--red);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  #answer pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  #answer blockquote {
+    margin: 0.8em 0;
+    padding: 4px 0 4px 14px;
+    border-left: 3px solid var(--red);
+    color: var(--ink-soft);
+  }
+  #answer table {
+    border-collapse: collapse;
+    margin: 1em 0;
+    width: 100%;
+    font-size: 13px;
+  }
+  #answer th, #answer td {
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  #answer th {
+    background: var(--red);
+    color: #fff;
+    font-weight: 600;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  #answer tr:nth-child(even) td { background: var(--paper); }
+  #answer a { color: var(--red-ink); }
+
+  #copy {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 4px 10px;
+    cursor: pointer;
+    margin-left: 12px;
+  }
+  #copy[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <b>text2sql</b>
+    <span class="sub">orchestrator console</span>
+  </div>
+  <div class="meta">
+    <span>env <b id="env">__ENV__</b></span>
+    <span>region <b>__REGION__</b></span>
+    <span>fn <b id="fn">__FN__</b></span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="kicker">Pipeline</div>
+    <ol class="steps">
+      <li class="lead"><span class="t">Question</span><span class="d">your prompt, verbatim</span></li>
+      <li class="lead"><span class="t">Schema</span><span class="d">Bedrock KB retrieve</span></li>
+      <li class="lead"><span class="t">SQL</span><span class="d">sqlglot validate + Athena</span></li>
+      <li class="lead"><span class="t">Answer</span><span class="d">Claude converse, guardrailed</span></li>
+    </ol>
+  </aside>
+
+  <main>
+    <h1>Ask the orchestrator</h1>
+    <p class="lede">One question in, one answer out. The full tool loop runs against the live dev stack — nothing is mocked.</p>
+
+    <form id="form" autocomplete="off">
+      <textarea id="question" class="question" placeholder="e.g. total transactions in January 2019 by category" spellcheck="false"></textarea>
+      <div class="toolbar">
+        <button type="submit" class="run" id="run">Run</button>
+        <span class="hint">ctrl&#8209;enter to run</span>
+      </div>
+      <div class="suggestions">
+        <button type="button">total transactions in January 2019</button>
+        <button type="button">spend by category, top 10</button>
+        <button type="button">fraud rate by state</button>
+      </div>
+    </form>
+
+    <div id="out">
+      <div class="status" id="status"></div>
+      <div id="answer"></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script>
+  const form = document.getElementById('form');
+  const input = document.getElementById('question');
+  const run = document.getElementById('run');
+  const statusEl = document.getElementById('status');
+  const answerEl = document.getElementById('answer');
+  const copyEl = document.createElement('button');
+  copyEl.id = 'copy';
+  copyEl.textContent = 'copy raw';
+  copyEl.hidden = true;
+
+  let lastRaw = '';
+
+  document.querySelectorAll('.suggestions button').forEach(function (b) {
+    b.addEventListener('click', function () { input.value = b.textContent; input.focus(); });
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) form.dispatchEvent(new Event('submit'));
+  });
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+
+    run.disabled = true;
+    statusEl.className = 'status';
+    statusEl.textContent = 'running…';
+    answerEl.innerHTML = '';
+    copyEl.hidden = true;
+
+    const t0 = performance.now();
+    try {
+      const res = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      const ms = Math.round(performance.now() - t0);
+
+      if (data.error) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'error · ' + (ms / 1000).toFixed(1) + 's';
+        answerEl.textContent = '';
+        const pre = document.createElement('pre');
+        pre.textContent = data.error;
+        answerEl.appendChild(pre);
+      } else {
+        statusEl.className = 'status ok';
+        statusEl.textContent = 'ok · ' + (ms / 1000).toFixed(1) + 's';
+        lastRaw = data.answer;
+        render(data.answer);
+        copyEl.hidden = false;
+      }
+    } catch (err) {
+      statusEl.className = 'status error';
+      statusEl.textContent = 'network error';
+      answerEl.textContent = '';
+      const pre = document.createElement('pre');
+      pre.textContent = String(err);
+      answerEl.appendChild(pre);
+    } finally {
+      run.disabled = false;
+    }
+  });
+
+  function render(md) {
+    if (window.marked) {
+      answerEl.innerHTML = window.marked.parse(md);
+    } else {
+      const pre = document.createElement('pre');
+      pre.textContent = md;
+      answerEl.innerHTML = '';
+      answerEl.appendChild(pre);
+    }
+    const status = document.querySelector('.status');
+    if (status && !status.contains(copyEl)) {
+      status.appendChild(copyEl);
+    }
+  }
+
+  copyEl.addEventListener('click', function () {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastRaw);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = lastRaw;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    copyEl.textContent = 'copied';
+    setTimeout(function () { copyEl.textContent = 'copy raw'; }, 1200);
+  });
+</script>
+</body>
+</html>

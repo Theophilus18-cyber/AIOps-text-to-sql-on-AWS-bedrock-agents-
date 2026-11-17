@@ -11,7 +11,7 @@ export AWS_PROFILE
 ACCOUNT_ID := $(shell aws --profile $(AWS_PROFILE) sts get-caller-identity --query Account --output text)
 TF := terraform -chdir=terraform/envs/$(ENV)
 
-.PHONY: help init plan apply build deploy refresh glossary smoke evaluate test fmt lint typecheck scan clean
+.PHONY: help init plan apply build deploy refresh glossary smoke ask evaluate test fmt lint typecheck scan clean
 
 help:
 	@echo "targets: init plan apply build deploy refresh smoke evaluate test fmt lint typecheck scan clean"
@@ -39,6 +39,9 @@ glossary:
 
 smoke:
 	python scripts/smoke_test.py --env $(ENV)
+
+ask:
+	python scripts/ask_server.py --env $(ENV)
 
 evaluate:
 	python scripts/run_evaluation.py --env $(ENV)
